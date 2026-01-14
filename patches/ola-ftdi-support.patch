@@ -1,0 +1,75 @@
+--- a/Formula/ola.rb	2026-01-14 09:18:23
++++ Formula/ola.rb	2026-01-14 09:18:10
+@@ -2,7 +2,8 @@
+   include Language::Python::Shebang
+   include Language::Python::Virtualenv
+ 
+-  desc "Open Lighting Architecture for lighting control information"
++  # FTDI-MOD: Updated description to indicate FTDI support
++  desc "Open Lighting Architecture for lighting control information (with FTDI DMX support)"
+   homepage "https://github.com/OpenLightingProject/ola"
+   license all_of: ["GPL-2.0-or-later", "LGPL-2.1-or-later"]
+   revision 8
+@@ -26,17 +27,6 @@
+     end
+   end
+ 
+-  no_autobump! because: :requires_manual_review
+-
+-  bottle do
+-    sha256 arm64_tahoe:   "b4d1b9691f659d49667cf55be27f9ad7c62a2655428a4f3aa8934a54dbe311a1"
+-    sha256 arm64_sequoia: "002022365aaa2579b37ea08fd534f65838187e4a6c62f005c2bb8e4839225ffd"
+-    sha256 arm64_sonoma:  "e2b0a357e840e2b6de8d15f94d6792eb67882478f2fe383be6067e96fbe4257f"
+-    sha256 sonoma:        "2840580cf7483896ea140328cd7e966c9169d1bb6ea6bb816b79e02137a44cee"
+-    sha256 arm64_linux:   "6b42431dccfa85cb7d6537fadb668c5c487f27cc112b6db052ab34880b2430bc"
+-    sha256 x86_64_linux:  "32730886d9c85ba3eb30461beb1d161642be7dd9f229d674b7cc22b2babaa5ce"
+-  end
+-
+   head do
+     url "https://github.com/OpenLightingProject/ola.git", branch: "master"
+ 
+@@ -55,6 +45,8 @@
+   depends_on "pkgconf" => :build
+ 
+   depends_on "abseil"
++  # FTDI-MOD: Added libftdi dependency for FTDI DMX support
++  depends_on "libftdi"
+   depends_on "liblo"
+   depends_on "libmicrohttpd"
+   depends_on "libusb"
+@@ -128,9 +120,11 @@
+       --enable-unittests
+       --enable-python-libs
+       --enable-rdm-tests
++      --enable-ftdidmx
+       --with-python_prefix=#{libexec}
+       --with-python_exec_prefix=#{libexec}
+     ]
++    # FTDI-MOD: Added --enable-ftdidmx above
+ 
+     ENV["PYTHON"] = venv.root/"bin/python"
+     system "autoreconf", "--force", "--install", "--verbose"
+@@ -148,10 +142,23 @@
+     rewrite_shebang python_shebang_rewrite_info(venv.root/"bin/python"), *bin.children
+   end
+ 
++  # FTDI-MOD: Extended caveats with FTDI configuration instructions
+   def caveats
+     <<~EOS
+       To use the bundled Python libraries:
+         #{Utils::Shell.export_value("PYTHONPATH", extra_python_path)}
++
++      FTDI DMX plugin is enabled in this build. To configure your FTDI device:
++
++        mkdir -p ~/.ola
++        echo "enabled = true" > ~/.ola/ola-ftdidmx.conf
++
++      You may also want to disable conflicting plugins:
++
++        echo "enabled = false" > ~/.ola/ola-usbserial.conf
++        echo "enabled = false" > ~/.ola/ola-opendmx.conf
++
++      Web interface: http://localhost:9090
+     EOS
+   end
+ 
